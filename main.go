@@ -211,61 +211,82 @@ func pairPlayers(players []Player) []Match {
     // Pair spelers binnen scoregroepen
     for score := range scoreGroups {
         group := scoreGroups[score]
-        for len(group) > 1 {
-            p1 := group[0]
-            found := false
-
-            for i := 1; i < len(group); i++ {
-                p2 := group[i]
-                if !hasPlayed(p1, p2) {
+        i := 0
+        for i < len(group) {
+            p1 := group[i]
+            if used[p1.Name] {
+                i++
+                continue
+            }
+            paired := false
+            for j := i + 1; j < len(group); j++ {
+                p2 := group[j]
+                if !used[p2.Name] && !hasPlayed(p1, p2) {
                     matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
                     used[p1.Name] = true
                     used[p2.Name] = true
-                    // Verwijder beide spelers correct
-                    group = append(group[1:i], group[i+1:]...)
-                    found = true
+                    paired = true
                     break
                 }
             }
-
-            if !found {
-                p2 := group[1]
-                matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
-                used[p1.Name] = true
-                used[p2.Name] = true
-                group = group[2:]
+            if paired {
+                // Verwijder gepairde spelers uit de groep
+                newGroup := []Player{}
+                for _, p := range group {
+                    if !used[p.Name] {
+                        newGroup = append(newGroup, p)
+                    }
+                }
+                group = newGroup
+            } else {
+                i++
             }
         }
-        // Update de scoregroep met overgebleven spelers
         scoreGroups[score] = group
     }
 
-    // Verzamel overgebleven spelers en pair ze waar mogelijk
+    // Verzamel overgebleven spelers
     var leftovers []Player
     for _, group := range scoreGroups {
-        if len(group) == 1 {
-            leftovers = append(leftovers, group[0])
+        for _, p := range group {
+            if !used[p.Name] {
+                leftovers = append(leftovers, p)
+            }
         }
     }
 
     // Pair leftovers met elkaar
-    for len(leftovers) > 1 {
-        p1 := leftovers[0]
-        p2 := leftovers[1]
-        if !used[p1.Name] && !used[p2.Name] && !hasPlayed(p1, p2) {
-            matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
-            used[p1.Name] = true
-            used[p2.Name] = true
+    i := 0
+    for i < len(leftovers)-1 {
+        p1 := leftovers[i]
+        if used[p1.Name] {
+            i++
+            continue
         }
-        leftovers = leftovers[2:]
+        paired := false
+        for j := i + 1; j < len(leftovers); j++ {
+            p2 := leftovers[j]
+            if !used[p2.Name] && !hasPlayed(p1, p2) {
+                matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
+                used[p1.Name] = true
+                used[p2.Name] = true
+                paired = true
+                break
+            }
+        }
+        if paired {
+            i = 0 // Reset i om opnieuw te beginnen na een succesvolle pairing
+        } else {
+            i++
+        }
     }
 
     // Geef "Bye" aan de laatste overgebleven speler
-    if len(leftovers) == 1 {
-        p := leftovers[0]
+    for _, p := range leftovers {
         if !used[p.Name] {
             matches = append(matches, Match{Player1: p, Player2: Player{Name: "Bye"}, Result: "1-0"})
             used[p.Name] = true
+            break // Slechts één Bye
         }
     }
 
@@ -561,15 +582,33 @@ func generateRatingHTML(players []Player, allResults [][]Result, initialRatings 
     maxRatingAdd := 30
 
     var htmlContent strings.Builder
-    htmlContent.WriteString("<html><body>")
+    htmlContent.WriteString(`
+    <html>
+    <head>
+    <style>
+    body {
+        text-align: center; /* Centreert alle tekst en inhoud */
+    }
+    table {
+        border-collapse: collapse; /* Zorgt voor nette randen */
+        margin: auto; /* Centreert de tabel */
+    }
+    th, td {
+        border: 1px solid lightgray; /* Rand om cellen */
+        padding: 10px; /* Padding van 10px in tabelcellen */
+		text-align: center; /* Centreert de tekst in de tabelcellen */
+    }
+    </style>
+    </head>
+    <body>
+    `)
 
     for _, player := range players {
         ownRating := initialRatings[player.Name]
         totalAdd := 0
-        // Voeg naam en level toe vóór EIGEN RATING START
-        htmlContent.WriteString(fmt.Sprintf("<p>%s  - Level %d</p>", player.Name, player.Level))
+        htmlContent.WriteString(fmt.Sprintf("<p>%s - Level %d</p>", player.Name, player.Level))
         htmlContent.WriteString(fmt.Sprintf("<p>EIGEN RATING START: %d</p>", ownRating))
-        htmlContent.WriteString("<table border='1'><tr><th>Naam</th><th>Level</th><th>Rating</th><th>Resultaat</th><th>Rating erbij</th></tr>")
+        htmlContent.WriteString("<table><tr><th>Naam</th><th>Level</th><th>Rating</th><th>Resultaat</th><th>Rating erbij</th></tr>")
 
         for _, results := range allResults {
             for _, result := range results {
@@ -582,7 +621,7 @@ func generateRatingHTML(players []Player, allResults [][]Result, initialRatings 
                         outcome = getMatchOutcome(player.Name, result)
                         for _, p := range players {
                             if p.Name == opponentName {
-                                opponentRating = initialRatings[p.Name] // Gebruik initiële rating
+                                opponentRating = initialRatings[p.Name]
                                 opponentLevel = p.Level
                                 break
                             }
@@ -601,7 +640,7 @@ func generateRatingHTML(players []Player, allResults [][]Result, initialRatings 
                     if opponentName != "Bye" {
                         bonus := getBonus(theRange, maxRatingAdd, opponentRating, ownRating, outcome)
                         totalAdd += bonus
-                        ownRating += bonus // Update rating voor de volgende match
+                        ownRating += bonus
                         htmlContent.WriteString(fmt.Sprintf("<tr><td>%s</td><td>%d</td><td>%d</td><td>%s</td><td>%+d</td></tr>",
                             opponentName, opponentLevel, opponentRating, outcomeToString(outcome), bonus))
                     }
@@ -611,7 +650,7 @@ func generateRatingHTML(players []Player, allResults [][]Result, initialRatings 
         htmlContent.WriteString("</table>")
         htmlContent.WriteString(fmt.Sprintf("<p>RATING ERBIJ: %+d</p>", totalAdd))
         htmlContent.WriteString(fmt.Sprintf("<p>NIEUWE RATING: %d</p>", initialRatings[player.Name]+totalAdd))
-        htmlContent.WriteString("<hr>") // Scheidingslijn tussen spelers
+        htmlContent.WriteString("<hr>")
     }
 
     htmlContent.WriteString("</body></html>")
