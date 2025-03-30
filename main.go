@@ -578,8 +578,8 @@ func outcomeToString(outcome string) string {
 }
 
 func generateRatingHTML(players []Player, allResults [][]Result, initialRatings map[string]int) error {
-    theRange := 450
-    maxRatingAdd := 30
+    var theRange int = 450
+    var maxRatingAdd int = 30
 
     var htmlContent strings.Builder
     htmlContent.WriteString(`
@@ -587,16 +587,16 @@ func generateRatingHTML(players []Player, allResults [][]Result, initialRatings 
     <head>
     <style>
     body {
-        text-align: center; /* Centreert alle tekst en inhoud */
+        text-align: center;
     }
     table {
-        border-collapse: collapse; /* Zorgt voor nette randen */
-        margin: auto; /* Centreert de tabel */
+        border-collapse: collapse;
+        margin: auto;
     }
     th, td {
-        border: 1px solid lightgray; /* Rand om cellen */
-        padding: 10px; /* Padding van 10px in tabelcellen */
-		text-align: center; /* Centreert de tekst in de tabelcellen */
+        border: 1px solid lightgray;
+        padding: 10px;
+        text-align: center;
     }
     </style>
     </head>
@@ -604,10 +604,9 @@ func generateRatingHTML(players []Player, allResults [][]Result, initialRatings 
     `)
 
     for _, player := range players {
-        ownRating := initialRatings[player.Name]
         totalAdd := 0
         htmlContent.WriteString(fmt.Sprintf("<p>%s - Level %d</p>", player.Name, player.Level))
-        htmlContent.WriteString(fmt.Sprintf("<p>EIGEN RATING START: %d</p>", ownRating))
+        htmlContent.WriteString(fmt.Sprintf("<p>EIGEN RATING START: %d</p>", initialRatings[player.Name]))
         htmlContent.WriteString("<table><tr><th>Naam</th><th>Level</th><th>Rating</th><th>Resultaat</th><th>Rating erbij</th></tr>")
 
         for _, results := range allResults {
@@ -638,9 +637,9 @@ func generateRatingHTML(players []Player, allResults [][]Result, initialRatings 
                         }
                     }
                     if opponentName != "Bye" {
-                        bonus := getBonus(theRange, maxRatingAdd, opponentRating, ownRating, outcome)
+                        // Gebruik altijd de initiële rating, niet een bijgewerkte versie
+                        bonus := getBonus(theRange, maxRatingAdd, opponentRating, initialRatings[player.Name], outcome)
                         totalAdd += bonus
-                        ownRating += bonus
                         htmlContent.WriteString(fmt.Sprintf("<tr><td>%s</td><td>%d</td><td>%d</td><td>%s</td><td>%+d</td></tr>",
                             opponentName, opponentLevel, opponentRating, outcomeToString(outcome), bonus))
                     }
