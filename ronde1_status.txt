@@ -1,0 +1,17 @@
+DeepSeaTurtle,21,1998,1,0.00,1985.00,1,Black Wolf
+Black Wolf,21,1985,1,0.00,1998.00,1,DeepSeaTurtle
+Bloedzuiger,21,1985,0,-4.00,1985.00,1,Junior
+Junior,21,1985,2,4.00,1985.00,1,Bloedzuiger
+Pablo,21,1985,0,-1.00,1961.00,1,2
+2,21,1961,2,1.00,1985.00,1,Pablo
+Bingewatch,21,1961,2,3.00,1961.00,1,Elise
+Elise,21,1961,0,-3.00,1961.00,1,Bingewatch
+Gaza,21,1961,0,-1.00,1961.00,1,Kwaaltjes
+Kwaaltjes,21,1961,2,1.00,1961.00,1,Gaza
+Vatos,21,1961,0,-2.00,1936.00,1,4fix49
+4fix49,21,1936,2,2.00,1961.00,1,Vatos
+Boysband,21,1936,0,-2.00,1936.00,1,Eva
+Eva,21,1936,2,2.00,1936.00,1,Boysband
+Sheep,21,1936,0,-1.00,1936.00,1,Snotneuze
+Snotneuze,21,1936,2,1.00,1936.00,1,Sheep
+Verdad,21,1936,2,1.00,0.00,0,

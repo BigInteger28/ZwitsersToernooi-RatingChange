@@ -1,0 +1,17 @@
+Junior,21,1985,4,3.00,5882.00,3,Bloedzuiger;2;Eva
+Eva,21,1936,6,6.00,5882.00,3,Boysband;Kwaaltjes;Junior
+Snotneuze,21,1936,6,9.00,5833.00,3,Sheep;Verdad;Vatos
+Black Wolf,21,1985,3,1.00,5919.00,3,DeepSeaTurtle;Bloedzuiger;4fix49
+4fix49,21,1936,5,4.00,5907.00,3,Vatos;Bingewatch;Black Wolf
+Bingewatch,21,1961,5,7.00,5833.00,3,Elise;4fix49;Verdad
+2,21,1961,4,4.00,5931.00,3,Pablo;Junior;Elise
+Pablo,21,1985,3,1.00,5895.00,3,2;DeepSeaTurtle;Sheep
+Elise,21,1961,2,-2.00,5883.00,3,Bingewatch;Gaza;2
+Sheep,21,1936,3,1.00,5882.00,3,Snotneuze;Vatos;Pablo
+Kwaaltjes,21,1961,4,0.00,5833.00,3,Gaza;Eva;Boysband
+Boysband,21,1936,2,-2.00,3897.00,2,Eva;Kwaaltjes
+Verdad,21,1936,2,-8.00,3897.00,2,Snotneuze;Bingewatch
+DeepSeaTurtle,21,1998,3,-1.00,3970.00,2,Black Wolf;Pablo
+Bloedzuiger,21,1985,0,-9.00,5931.00,3,Junior;Black Wolf;Gaza
+Gaza,21,1961,2,-4.00,5907.00,3,Kwaaltjes;Elise;Bloedzuiger
+Vatos,21,1961,0,-7.00,5808.00,3,4fix49;Sheep;Snotneuze
