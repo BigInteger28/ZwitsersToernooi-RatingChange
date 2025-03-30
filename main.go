@@ -578,7 +578,7 @@ func outcomeToString(outcome string) string {
 }
 
 func generateRatingHTML(players []Player, allResults [][]Result, initialRatings map[string]int) error {
-    theRange := 750
+    theRange := 450
     maxRatingAdd := 30
 
     var htmlContent strings.Builder
