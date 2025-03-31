@@ -697,42 +697,58 @@ func main() {
         fmt.Scanln(&choice)
 
         switch choice {
-        case "0":
-            fmt.Print("Voer nieuwe rondenr in: ")
-            var newRound string
-            fmt.Scanln(&newRound)
-            if roundNum, err := strconv.Atoi(newRound); err == nil {
-                currentRound = roundNum
-                fmt.Println("Huidige rondenr is nu:", currentRound)
+		case "0":
+			fmt.Print("Voer nieuwe rondenr in: ")
+			var newRound string
+			fmt.Scanln(&newRound)
+			if roundNum, err := strconv.Atoi(newRound); err == nil {
+				currentRound = roundNum
+				fmt.Println("Huidige rondenr is nu:", currentRound)
 
-                // Laad spelerstatus
-                statusFile := fmt.Sprintf("ronde%d_status.txt", currentRound)
-                if _, err := os.Stat(statusFile); err == nil {
-                    if err := loadPlayerStatus(statusFile, players); err != nil {
-                        fmt.Println("Fout bij laden spelerstatus:", err)
-                    } else {
-                        fmt.Println("Spelerstatus geladen voor ronde", currentRound)
-                    }
-                } else {
-                    fmt.Println("Geen spelerstatus gevonden voor ronde", currentRound, "- start met schone lei")
-                }
+				// Probeer spelerstatus van de huidige ronde te laden
+				statusFile := fmt.Sprintf("ronde%d_status.txt", currentRound)
+				if _, err := os.Stat(statusFile); err == nil {
+					if err := loadPlayerStatus(statusFile, players); err != nil {
+						fmt.Println("Fout bij laden spelerstatus:", err)
+					} else {
+						fmt.Println("Spelerstatus geladen voor ronde", currentRound)
+					}
+				} else {
+					// Zoek naar de meest recente eerdere status
+					loaded := false
+					for r := currentRound - 1; r >= 0; r-- {
+						prevStatusFile := fmt.Sprintf("ronde%d_status.txt", r)
+						if _, err := os.Stat(prevStatusFile); err == nil {
+							if err := loadPlayerStatus(prevStatusFile, players); err != nil {
+								fmt.Println("Fout bij laden spelerstatus van ronde", r, ":", err)
+							} else {
+								fmt.Println("Spelerstatus geladen van ronde", r)
+								loaded = true
+								break
+							}
+						}
+					}
+					if !loaded {
+						fmt.Println("Geen eerdere spelerstatus gevonden - start met schone lei")
+					}
+				}
 
-                // Laad matches
-                filename := fmt.Sprintf("ronde%d.txt", currentRound)
-                if _, err := os.Stat(filename); err == nil {
-                    lastMatches, err = loadMatches(filename, players)
-                    if err != nil {
-                        fmt.Println("Fout bij laden matches:", err)
-                    } else {
-                        fmt.Println("Matches geladen voor ronde", currentRound)
-                    }
-                } else {
-                    fmt.Println("Geen matches gevonden voor ronde", currentRound)
-                    lastMatches = nil // Reset matches als er geen bestand is
-                }
-            } else {
-                fmt.Println("Ongeldig rondenr")
-            }
+				// Laad matches van de huidige ronde
+				filename := fmt.Sprintf("ronde%d.txt", currentRound)
+				if _, err := os.Stat(filename); err == nil {
+					lastMatches, err = loadMatches(filename, players)
+					if err != nil {
+						fmt.Println("Fout bij laden matches:", err)
+					} else {
+						fmt.Println("Matches geladen voor ronde", currentRound)
+					}
+				} else {
+					fmt.Println("Geen matches gevonden voor ronde", currentRound)
+					lastMatches = nil // Reset matches als er geen bestand is
+				}
+			} else {
+				fmt.Println("Ongeldig rondenr")
+			}
 
         case "1":
             currentRound++
