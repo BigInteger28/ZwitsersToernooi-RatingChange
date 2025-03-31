@@ -255,40 +255,48 @@ func pairPlayers(players []Player) []Match {
         }
     }
 
-    // Pair leftovers met elkaar
-    i := 0
-    for i < len(leftovers)-1 {
-        p1 := leftovers[i]
-        if used[p1.Name] {
-            i++
-            continue
-        }
-        paired := false
-        for j := i + 1; j < len(leftovers); j++ {
-            p2 := leftovers[j]
-            if !used[p2.Name] && !hasPlayed(p1, p2) {
-                matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
-                used[p1.Name] = true
-                used[p2.Name] = true
-                paired = true
-                break
-            }
-        }
-        if paired {
-            i = 0 // Reset i om opnieuw te beginnen na een succesvolle pairing
-        } else {
-            i++
-        }
-    }
+	// Fase 1: Pair leftovers zonder herhalingen
+	i := 0
+	for i < len(leftovers) {
+		p1 := leftovers[i]
+		if used[p1.Name] {
+			i++
+			continue
+		}
+		paired := false
+		for j := i + 1; j < len(leftovers); j++ {
+			p2 := leftovers[j]
+			if !used[p2.Name] && !hasPlayed(p1, p2) {
+				matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
+				used[p1.Name] = true
+				used[p2.Name] = true
+				paired = true
+				break
+			}
+		}
+		if paired {
+			i = 0 // Reset om opnieuw te beginnen
+		} else {
+			i++
+		}
+	}
 
-    // Geef "Bye" aan de laatste overgebleven speler
-    for _, p := range leftovers {
-        if !used[p.Name] {
-            matches = append(matches, Match{Player1: p, Player2: Player{Name: "Bye"}, Result: "1-0"})
-            used[p.Name] = true
-            break // Slechts één Bye
-        }
-    }
+	// Fase 2: Pair overgebleven spelers, herhalingen toegestaan
+	remaining := []Player{}
+	for _, p := range leftovers {
+		if !used[p.Name] {
+			remaining = append(remaining, p)
+		}
+	}
+	for i := 0; i < len(remaining); i += 2 {
+		if i+1 < len(remaining) {
+			p1 := remaining[i]
+			p2 := remaining[i+1]
+			matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
+			used[p1.Name] = true
+			used[p2.Name] = true
+		}
+	}
 
     return matches
 }
