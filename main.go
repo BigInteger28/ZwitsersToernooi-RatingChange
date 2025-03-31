@@ -37,6 +37,8 @@ type Result struct {
     Score2  float64
 }
 
+var byePlayer = Player{Name: "Bye", Level: 0, Rating: 0}
+
 // Spelers inlezen uit input.txt
 func readPlayers(filename string) ([]Player, error) {
     file, err := os.Open(filename)
@@ -298,6 +300,15 @@ func pairPlayers(players []Player) []Match {
         }
     }
 
+    // Voeg "Bye" toe voor de laatste overgebleven speler
+    for _, p := range players {
+        if !used[p.Name] {
+            matches = append(matches, Match{Player1: p, Player2: byePlayer, Result: "0-0"})
+            used[p.Name] = true
+            break // Slechts één "Bye" nodig
+        }
+    }
+
     return matches
 }
 
@@ -367,17 +378,20 @@ func updatePlayers(players []Player, results []Result) {
     for _, result := range results {
         for i := range players {
             if players[i].Name == result.Player1 {
-                // Update Punten
-                if result.Score1 > result.Score2 {
-                    players[i].Punten += 2
-                } else if result.Score1 == result.Score2 {
-                    players[i].Punten += 1
-                }
-                // Update Matchscore: start met vorige Matchscore en tel (eigen score - score tegenstander) op
-                players[i].Matchscore += (result.Score1 - result.Score2)
-                if result.Player2 != "Bye" {
+                if result.Player2 == "Bye" {
+                    players[i].Punten += 2      // 2 punten voor een "Bye" (overwinning)
+                    players[i].Matchscore += 1.0 // Matchscore +1 (1-0 overwinning)
+                    // Geen opponent toevoegen
+                    // RoundsPlayed niet verhogen
+                } else {
+                    // Normale update
+                    if result.Score1 > result.Score2 {
+                        players[i].Punten += 2
+                    } else if result.Score1 == result.Score2 {
+                        players[i].Punten += 1
+                    }
+                    players[i].Matchscore += (result.Score1 - result.Score2)
                     players[i].Opponents = append(players[i].Opponents, result.Player2)
-                    // Voeg rating van tegenstander toe aan RatOppTotal
                     for _, opp := range players {
                         if opp.Name == result.Player2 {
                             players[i].RatOppTotal += float64(opp.Rating)
@@ -387,16 +401,14 @@ func updatePlayers(players []Player, results []Result) {
                     players[i].RoundsPlayed++
                 }
             } else if players[i].Name == result.Player2 && result.Player2 != "Bye" {
-                // Update Punten
+                // Normale update voor Player2
                 if result.Score2 > result.Score1 {
                     players[i].Punten += 2
                 } else if result.Score2 == result.Score1 {
                     players[i].Punten += 1
                 }
-                // Update Matchscore: start met vorige Matchscore en tel (eigen score - score tegenstander) op
                 players[i].Matchscore += (result.Score2 - result.Score1)
                 players[i].Opponents = append(players[i].Opponents, result.Player1)
-                // Voeg rating van tegenstander toe aan RatOppTotal
                 for _, opp := range players {
                     if opp.Name == result.Player1 {
                         players[i].RatOppTotal += float64(opp.Rating)
@@ -467,36 +479,36 @@ func generateHTML(round int, players []Player, matches []Match) error {
         </tr>
         {{end}}
     </table>
-    <h2>Pairings</h2>
-    <table>
-        <tr>
-            <th>Nr.</th>
-            <th>Naam</th>
-            <th>Level</th>
-            <th>Rating</th>
-            <th>Score</th>
-            <th>Naam</th>
-            <th>Level</th>
-            <th>Rating</th>
-        </tr>
-        {{range $index, $match := .Matches}}
-        <tr>
-            <td>{{add $index 1}}</td>
-            <td>{{$match.Player1.Name}}</td>
-            <td>{{$match.Player1.Level}}</td>
-            <td>{{$match.Player1.Rating}}</td>
-            <td>{{$match.Result}}</td>
-            <td>{{$match.Player2.Name}}</td>
-            {{if eq $match.Player2.Name "Bye"}}
-            <td>-</td>
-            <td>-</td>
-            {{else}}
-            <td>{{$match.Player2.Level}}</td>
-            <td>{{$match.Player2.Rating}}</td>
-            {{end}}
-        </tr>
-        {{end}}
-    </table>
+	<h2>Pairings</h2>
+	<table>
+		<tr>
+			<th>Nr.</th>
+			<th>Naam</th>
+			<th>Level</th>
+			<th>Rating</th>
+			<th>Score</th>
+			<th>Naam</th>
+			<th>Level</th>
+			<th>Rating</th>
+		</tr>
+		{{range $index, $match := .Matches}}
+		<tr>
+			<td>{{add $index 1}}</td>
+			<td>{{$match.Player1.Name}}</td>
+			<td>{{$match.Player1.Level}}</td>
+			<td>{{$match.Player1.Rating}}</td>
+			<td>{{$match.Result}}</td>
+			<td>{{$match.Player2.Name}}</td>
+			{{if eq $match.Player2.Name "Bye"}}
+			<td>-</td>
+			<td>-</td>
+			{{else}}
+			<td>{{$match.Player2.Level}}</td>
+			<td>{{$match.Player2.Rating}}</td>
+			{{end}}
+		</tr>
+		{{end}}
+	</table>
     </body>
     </html>`
 
