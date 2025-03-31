@@ -433,9 +433,34 @@ func updateMatchResults(matches []Match, results []Result) {
     }
 }
 
+func sortMatches(matches []Match) {
+    sort.Slice(matches, func(i, j int) bool {
+        // Controleer of een match een "Bye" bevat
+        isByeI := matches[i].Player2.Name == "Bye"
+        isByeJ := matches[j].Player2.Name == "Bye"
+
+        // Als een van de twee een "Bye" is, geef voorrang aan de match zonder "Bye"
+        if isByeI != isByeJ {
+            return !isByeI // Geen "Bye" komt voor een "Bye"
+        }
+
+        // Als beide geen "Bye" zijn of beide wel, sorteer op punten
+        sumI := matches[i].Player1.Punten
+        sumJ := matches[j].Player1.Punten
+        if !isByeI { // Alleen optellen als het geen "Bye" is
+            sumI += matches[i].Player2.Punten
+            sumJ += matches[j].Player2.Punten
+        }
+
+        return sumI > sumJ // Hogere punten eerst
+    })
+}
+
 // HTML genereren met CSS voor centrering, randen en padding
 func generateHTML(round int, players []Player, matches []Match) error {
-    const tmpl = `
+    // Sorteer de matches van beste naar slechtste spelers
+    sortMatches(matches)
+	const tmpl = `
     <html>
     <head>
     <title>Ronde {{.Round}}</title>
