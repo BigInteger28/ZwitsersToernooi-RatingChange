@@ -161,11 +161,14 @@ func loadPlayerStatus(filename string, players []Player) error {
     return scanner.Err()
 }
 
-// Spelers sorteren op Punten, dan RatOpp, dan Matchscore, dan Rating (allemaal aflopend)
+// Spelers sorteren op Punten, dan Matchscore, dan RatOpp, dan Rating (allemaal aflopend)
 func sortPlayers(players []Player) {
     sort.Slice(players, func(i, j int) bool {
         if players[i].Punten != players[j].Punten {
             return players[i].Punten > players[j].Punten
+        }
+        if players[i].Matchscore != players[j].Matchscore {
+            return players[i].Matchscore > players[j].Matchscore
         }
         var ratOppI, ratOppJ float64
         if players[i].RoundsPlayed > 0 {
@@ -176,9 +179,6 @@ func sortPlayers(players []Player) {
         }
         if ratOppI != ratOppJ {
             return ratOppI > ratOppJ
-        }
-        if players[i].Matchscore != players[j].Matchscore {
-            return players[i].Matchscore > players[j].Matchscore
         }
         return players[i].Rating > players[j].Rating
     })
@@ -255,48 +255,48 @@ func pairPlayers(players []Player) []Match {
         }
     }
 
-	// Fase 1: Pair leftovers zonder herhalingen
-	i := 0
-	for i < len(leftovers) {
-		p1 := leftovers[i]
-		if used[p1.Name] {
-			i++
-			continue
-		}
-		paired := false
-		for j := i + 1; j < len(leftovers); j++ {
-			p2 := leftovers[j]
-			if !used[p2.Name] && !hasPlayed(p1, p2) {
-				matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
-				used[p1.Name] = true
-				used[p2.Name] = true
-				paired = true
-				break
-			}
-		}
-		if paired {
-			i = 0 // Reset om opnieuw te beginnen
-		} else {
-			i++
-		}
-	}
+    // Fase 1: Pair leftovers zonder herhalingen
+    i := 0
+    for i < len(leftovers) {
+        p1 := leftovers[i]
+        if used[p1.Name] {
+            i++
+            continue
+        }
+        paired := false
+        for j := i + 1; j < len(leftovers); j++ {
+            p2 := leftovers[j]
+            if !used[p2.Name] && !hasPlayed(p1, p2) {
+                matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
+                used[p1.Name] = true
+                used[p2.Name] = true
+                paired = true
+                break
+            }
+        }
+        if paired {
+            i = 0 // Reset om opnieuw te beginnen
+        } else {
+            i++
+        }
+    }
 
-	// Fase 2: Pair overgebleven spelers, herhalingen toegestaan
-	remaining := []Player{}
-	for _, p := range leftovers {
-		if !used[p.Name] {
-			remaining = append(remaining, p)
-		}
-	}
-	for i := 0; i < len(remaining); i += 2 {
-		if i+1 < len(remaining) {
-			p1 := remaining[i]
-			p2 := remaining[i+1]
-			matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
-			used[p1.Name] = true
-			used[p2.Name] = true
-		}
-	}
+    // Fase 2: Pair overgebleven spelers, herhalingen toegestaan
+    remaining := []Player{}
+    for _, p := range leftovers {
+        if !used[p.Name] {
+            remaining = append(remaining, p)
+        }
+    }
+    for i := 0; i < len(remaining); i += 2 {
+        if i+1 < len(remaining) {
+            p1 := remaining[i]
+            p2 := remaining[i+1]
+            matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
+            used[p1.Name] = true
+            used[p2.Name] = true
+        }
+    }
 
     return matches
 }
@@ -452,8 +452,8 @@ func generateHTML(round int, players []Player, matches []Match) error {
             <th>Level</th>
             <th>Rating</th>
             <th>Punten</th>
-            <th>RatOpp</th>
             <th>Matchscore</th>
+            <th>RatOpp</th>
         </tr>
         {{range $index, $player := .Players}}
         <tr>
@@ -462,8 +462,8 @@ func generateHTML(round int, players []Player, matches []Match) error {
             <td>{{$player.Level}}</td>
             <td>{{$player.Rating}}</td>
             <td>{{$player.Punten}}</td>
-            <td>{{if $player.RoundsPlayed}}{{printf "%.2f" (div $player.RatOppTotal $player.RoundsPlayed)}}{{else}}0{{end}}</td>
             <td>{{$player.Matchscore}}</td>
+            <td>{{if $player.RoundsPlayed}}{{printf "%.2f" (div $player.RatOppTotal $player.RoundsPlayed)}}{{else}}0{{end}}</td>
         </tr>
         {{end}}
     </table>
@@ -687,8 +687,8 @@ func main() {
         fmt.Println("0. Verander huidige rondenr")
         fmt.Println("1. Genereer nieuwe ronde")
         fmt.Println("2. Genereer finale ronde")
-        fmt.Println("3. Genereer HTML")
-        fmt.Println("4. Verwerk scores van huidige ronde")
+		fmt.Println("3. Verwerk scores van huidige ronde")
+        fmt.Println("4. Genereer HTML")        
         fmt.Println("5. Verwerk nieuwe rating alle spelers")
         fmt.Println("6. Exit")
         fmt.Print("Kies een optie: ")
@@ -757,17 +757,8 @@ func main() {
             } else {
                 fmt.Println("Finale ronde gegenereerd.")
             }
-
+			
         case "3":
-            if len(lastMatches) == 0 {
-                fmt.Println("Geen matches beschikbaar om HTML te genereren. Genereer eerst een ronde of laad de matches.")
-            } else if err := generateHTML(currentRound, players, lastMatches); err != nil {
-                fmt.Println("Fout bij genereren HTML:", err)
-            } else {
-                fmt.Println("HTML gegenereerd voor ronde", currentRound)
-            }
-
-        case "4":
             filename := fmt.Sprintf("ronde%d.txt", currentRound)
             results, err := readRoundResults(filename)
             if err != nil {
@@ -782,6 +773,15 @@ func main() {
                     fmt.Println("Spelerstatus opgeslagen voor ronde", currentRound)
                 }
                 fmt.Println("Scores verwerkt voor ronde", currentRound)
+            }
+
+        case "4":
+            if len(lastMatches) == 0 {
+                fmt.Println("Geen matches beschikbaar om HTML te genereren. Genereer eerst een ronde of laad de matches.")
+            } else if err := generateHTML(currentRound, players, lastMatches); err != nil {
+                fmt.Println("Fout bij genereren HTML:", err)
+            } else {
+                fmt.Println("HTML gegenereerd voor ronde", currentRound)
             }
 
         case "5":
