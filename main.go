@@ -581,10 +581,10 @@ func getBonus(theRange int, maxRatingAdd int, ratingOpponent int, ownRating int,
         if ratingOpponent >= ownRating {
             return bonus / 2
         } else {
-            return 0 - ((maxRatingAdd - bonus) / 2)
+            return 0 - ((((maxRatingAdd - bonus) / 2) * 75) / 100)
         }
     } else {
-        return 0 - (maxRatingAdd - bonus)
+        return 0 - (((maxRatingAdd - bonus) * 75) / 100)
     }
 }
 
@@ -623,8 +623,8 @@ func outcomeToString(outcome string) string {
 }
 
 func generateRatingHTML(players []Player, allResults [][]Result, initialRatings map[string]int) error {
-    var theRange int = 450
-    var maxRatingAdd int = 30
+    var theRange int = 675
+    var maxRatingAdd int = 40
 
     var htmlContent strings.Builder
     htmlContent.WriteString(`
