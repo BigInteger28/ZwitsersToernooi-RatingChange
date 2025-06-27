@@ -16,7 +16,7 @@ type Player struct {
     Level        int
     Rating       int
     Punten       int     // 2 voor winst, 1 voor gelijkspel, 0 voor verlies
-    Matchscore   float64 // Cumulatieve scoreverschillen: eigen score - score tegenstander
+    Matchscore   int     // Cumulatieve scoreverschillen: eigen score - score tegenstander
     Opponents    []string
     RatOppTotal  float64 // Totale som van ratings van tegenstanders
     RoundsPlayed int     // Aantal gespeelde rondes
@@ -33,8 +33,8 @@ type Match struct {
 type Result struct {
     Player1 string
     Player2 string
-    Score1  float64
-    Score2  float64
+    Score1  int
+    Score2  int
 }
 
 var byePlayer = Player{Name: "Bye", Level: 0, Rating: 0}
@@ -62,7 +62,7 @@ func readPlayers(filename string) ([]Player, error) {
             Level:        level,
             Rating:       rating,
             Punten:       0,
-            Matchscore:   0.0,
+            Matchscore:   0,
             Opponents:    []string{},
             RatOppTotal:  0.0,
             RoundsPlayed: 0,
@@ -115,7 +115,7 @@ func savePlayerStatus(filename string, players []Player) error {
     defer file.Close()
 
     for _, player := range players {
-        line := fmt.Sprintf("%s,%d,%d,%d,%.2f,%.2f,%d,%s\n",
+        line := fmt.Sprintf("%s,%d,%d,%d,%d,%.2f,%d,%s\n",
             player.Name, player.Level, player.Rating, player.Punten,
             player.Matchscore, player.RatOppTotal, player.RoundsPlayed,
             strings.Join(player.Opponents, ";"))
@@ -142,7 +142,7 @@ func loadPlayerStatus(filename string, players []Player) error {
         level, _ := strconv.Atoi(parts[1])
         rating, _ := strconv.Atoi(parts[2])
         punten, _ := strconv.Atoi(parts[3])
-        matchscore, _ := strconv.ParseFloat(parts[4], 64)
+        matchscore, _ := strconv.Atoi(parts[4])
         ratOppTotal, _ := strconv.ParseFloat(parts[5], 64)
         roundsPlayed, _ := strconv.Atoi(parts[6])
         opponents := strings.Split(parts[7], ";")
@@ -361,8 +361,8 @@ func readRoundResults(filename string) ([]Result, error) {
         if len(scores) != 2 {
             continue
         }
-        score1, _ := strconv.ParseFloat(scores[0], 64)
-        score2, _ := strconv.ParseFloat(scores[1], 64)
+        score1, _ := strconv.Atoi(scores[0])
+        score2, _ := strconv.Atoi(scores[1])
         results = append(results, Result{
             Player1: p1Name,
             Player2: p2Name,
@@ -380,7 +380,7 @@ func updatePlayers(players []Player, results []Result) {
             if players[i].Name == result.Player1 {
                 if result.Player2 == "Bye" {
                     players[i].Punten += 2      // 2 punten voor een "Bye" (overwinning)
-                    players[i].Matchscore += 1.0 // Matchscore +1 (1-0 overwinning)
+                    players[i].Matchscore += 1 // Matchscore +1 (1-0 overwinning)
                     // Geen opponent toevoegen
                     // RoundsPlayed niet verhogen
                 } else {
@@ -426,7 +426,7 @@ func updateMatchResults(matches []Match, results []Result) {
     for i, match := range matches {
         for _, result := range results {
             if match.Player1.Name == result.Player1 && match.Player2.Name == result.Player2 {
-                matches[i].Result = fmt.Sprintf("%v-%v", result.Score1, result.Score2)
+                matches[i].Result = fmt.Sprintf("%d-%d", result.Score1, result.Score2)
                 break
             }
         }
@@ -460,7 +460,7 @@ func sortMatches(matches []Match) {
 func generateHTML(round int, players []Player, matches []Match) error {
     // Sorteer de matches van beste naar slechtste spelers
     sortMatches(matches)
-	const tmpl = `
+    const tmpl = `
     <html>
     <head>
     <title>Ronde {{.Round}}</title>
@@ -504,36 +504,36 @@ func generateHTML(round int, players []Player, matches []Match) error {
         </tr>
         {{end}}
     </table>
-	<h2>Pairings</h2>
-	<table>
-		<tr>
-			<th>Nr.</th>
-			<th>Naam</th>
-			<th>Level</th>
-			<th>Rating</th>
-			<th>Score</th>
-			<th>Naam</th>
-			<th>Level</th>
-			<th>Rating</th>
-		</tr>
-		{{range $index, $match := .Matches}}
-		<tr>
-			<td>{{add $index 1}}</td>
-			<td>{{$match.Player1.Name}}</td>
-			<td>{{$match.Player1.Level}}</td>
-			<td>{{$match.Player1.Rating}}</td>
-			<td>{{$match.Result}}</td>
-			<td>{{$match.Player2.Name}}</td>
-			{{if eq $match.Player2.Name "Bye"}}
-			<td>-</td>
-			<td>-</td>
-			{{else}}
-			<td>{{$match.Player2.Level}}</td>
-			<td>{{$match.Player2.Rating}}</td>
-			{{end}}
-		</tr>
-		{{end}}
-	</table>
+    <h2>Pairings</h2>
+    <table>
+        <tr>
+            <th>Nr.</th>
+            <th>Naam</th>
+            <th>Level</th>
+            <th>Rating</th>
+            <th>Score</th>
+            <th>Naam</th>
+            <th>Level</th>
+            <th>Rating</th>
+        </tr>
+        {{range $index, $match := .Matches}}
+        <tr>
+            <td>{{add $index 1}}</td>
+            <td>{{$match.Player1.Name}}</td>
+            <td>{{$match.Player1.Level}}</td>
+            <td>{{$match.Player1.Rating}}</td>
+            <td>{{$match.Result}}</td>
+            <td>{{$match.Player2.Name}}</td>
+            {{if eq $match.Player2.Name "Bye"}}
+            <td>-</td>
+            <td>-</td>
+            {{else}}
+            <td>{{$match.Player2.Level}}</td>
+            <td>{{$match.Player2.Rating}}</td>
+            {{end}}
+        </tr>
+        {{end}}
+    </table>
     </body>
     </html>`
 
@@ -622,12 +622,99 @@ func outcomeToString(outcome string) string {
     }
 }
 
+// Structs voor HTML template
+type PlayerResult struct {
+    Rank           int
+    OpponentName   string
+    OpponentLevel  int
+    OpponentRating int
+    MatchResult    string
+    Outcome        string
+    Bonus          int
+}
+
+type PlayerData struct {
+    Name          string
+    Level         int
+    InitialRating int
+    Results       []PlayerResult
+    TotalAdd      int
+    NewRating     int
+}
+
 func generateRatingHTML(players []Player, allResults [][]Result, initialRatings map[string]int) error {
     var theRange int = 675
     var maxRatingAdd int = 40
 
-    var htmlContent strings.Builder
-    htmlContent.WriteString(`
+    // Sorteer spelers voor ranking
+    sortPlayers(players)
+    playerRank := make(map[string]int)
+    for i, p := range players {
+        playerRank[p.Name] = i
+    }
+
+    // Maak data voor template
+    var playerData []PlayerData
+    for _, player := range players {
+        totalAdd := 0
+        var results []PlayerResult
+        for _, roundResults := range allResults {
+            for _, result := range roundResults {
+                if result.Player1 == player.Name || result.Player2 == player.Name {
+                    var opponentName string
+                    var opponentRating, opponentLevel int
+                    var outcome, matchResult string
+                    if result.Player1 == player.Name {
+                        opponentName = result.Player2
+                        outcome = getMatchOutcome(player.Name, result)
+                        for _, p := range players {
+                            if p.Name == opponentName {
+                                opponentRating = initialRatings[p.Name]
+                                opponentLevel = p.Level
+                                break
+                            }
+                        }
+                        matchResult = fmt.Sprintf("%d-%d", result.Score1, result.Score2)
+                    } else {
+                        opponentName = result.Player1
+                        outcome = getMatchOutcome(player.Name, result)
+                        for _, p := range players {
+                            if p.Name == opponentName {
+                                opponentRating = initialRatings[p.Name]
+                                opponentLevel = p.Level
+                                break
+                            }
+                        }
+                        matchResult = fmt.Sprintf("%d-%d", result.Score2, result.Score1)
+                    }
+                    if opponentName != "Bye" {
+                        bonus := getBonus(theRange, maxRatingAdd, opponentRating, initialRatings[player.Name], outcome)
+                        totalAdd += bonus
+                        results = append(results, PlayerResult{
+                            Rank:           playerRank[opponentName], // Rank van de tegenstander
+                            OpponentName:   opponentName,
+                            OpponentLevel:  opponentLevel,
+                            OpponentRating: opponentRating,
+                            MatchResult:    matchResult,
+                            Outcome:        outcomeToString(outcome),
+                            Bonus:          bonus,
+                        })
+                    }
+                }
+            }
+        }
+        playerData = append(playerData, PlayerData{
+            Name:          player.Name,
+            Level:         player.Level,
+            InitialRating: initialRatings[player.Name],
+            Results:       results,
+            TotalAdd:      totalAdd,
+            NewRating:     initialRatings[player.Name] + totalAdd,
+        })
+    }
+
+    // HTML template
+    const tmpl = `
     <html>
     <head>
     <style>
@@ -646,66 +733,54 @@ func generateRatingHTML(players []Player, allResults [][]Result, initialRatings 
     </style>
     </head>
     <body>
-    `)
+    {{range .Players}}
+    <p>{{.Name}} - Level {{.Level}}</p>
+    <p>EIGEN RATING START: {{.InitialRating}}</p>
+    <table>
+        <tr>
+            <th>Rank</th>
+            <th>Naam</th>
+            <th>Level</th>
+            <th>Rating</th>
+            <th>Match Result</th>
+            <th>Resultaat</th>
+            <th>Rating erbij</th>
+        </tr>
+        {{range .Results}}
+        {{if ne .OpponentName "Bye"}}
+        <tr>
+            <td>{{add .Rank 1}}</td>
+            <td>{{.OpponentName}}</td>
+            <td>{{.OpponentLevel}}</td>
+            <td>{{.OpponentRating}}</td>
+            <td>{{.MatchResult}}</td>
+            <td>{{.Outcome}}</td>
+            <td>{{.Bonus}}</td>
+        </tr>
+        {{end}}
+        {{end}}
+    </table>
+    <p>RATING ERBIJ: {{.TotalAdd}}</p>
+    <p>NIEUWE RATING: {{.NewRating}}</p>
+    <hr>
+    {{end}}
+    </body>
+    </html>`
 
-    for _, player := range players {
-        totalAdd := 0
-        htmlContent.WriteString(fmt.Sprintf("<p>%s - Level %d</p>", player.Name, player.Level))
-        htmlContent.WriteString(fmt.Sprintf("<p>EIGEN RATING START: %d</p>", initialRatings[player.Name]))
-        htmlContent.WriteString("<table><tr><th>Naam</th><th>Level</th><th>Rating</th><th>Resultaat</th><th>Rating erbij</th></tr>")
+    t := template.Must(template.New("rating").Funcs(template.FuncMap{
+        "add": func(a int, b int) int { return a + b },
+    }).Parse(tmpl))
 
-        for _, results := range allResults {
-            for _, result := range results {
-                if result.Player1 == player.Name || result.Player2 == player.Name {
-                    var opponentName string
-                    var opponentRating, opponentLevel int
-                    var outcome string
-                    if result.Player1 == player.Name {
-                        opponentName = result.Player2
-                        outcome = getMatchOutcome(player.Name, result)
-                        for _, p := range players {
-                            if p.Name == opponentName {
-                                opponentRating = initialRatings[p.Name]
-                                opponentLevel = p.Level
-                                break
-                            }
-                        }
-                    } else {
-                        opponentName = result.Player1
-                        outcome = getMatchOutcome(player.Name, result)
-                        for _, p := range players {
-                            if p.Name == opponentName {
-                                opponentRating = initialRatings[p.Name]
-                                opponentLevel = p.Level
-                                break
-                            }
-                        }
-                    }
-                    if opponentName != "Bye" {
-                        // Gebruik altijd de initiële rating, niet een bijgewerkte versie
-                        bonus := getBonus(theRange, maxRatingAdd, opponentRating, initialRatings[player.Name], outcome)
-                        totalAdd += bonus
-                        htmlContent.WriteString(fmt.Sprintf("<tr><td>%s</td><td>%d</td><td>%d</td><td>%s</td><td>%+d</td></tr>",
-                            opponentName, opponentLevel, opponentRating, outcomeToString(outcome), bonus))
-                    }
-                }
-            }
-        }
-        htmlContent.WriteString("</table>")
-        htmlContent.WriteString(fmt.Sprintf("<p>RATING ERBIJ: %+d</p>", totalAdd))
-        htmlContent.WriteString(fmt.Sprintf("<p>NIEUWE RATING: %d</p>", initialRatings[player.Name]+totalAdd))
-        htmlContent.WriteString("<hr>")
-    }
-
-    htmlContent.WriteString("</body></html>")
-
-    file, err := os.Create("rating_update.html")
+    file, err := os.Create("overview.html")
     if err != nil {
         return err
     }
     defer file.Close()
-    file.WriteString(htmlContent.String())
-    return nil
+
+    data := struct {
+        Players []PlayerData
+    }{Players: playerData}
+    return t.Execute(file, data)
 }
 
 // Hoofdprogramma met menu
@@ -724,9 +799,9 @@ func main() {
         fmt.Println("0. Verander huidige rondenr")
         fmt.Println("1. Genereer nieuwe ronde")
         fmt.Println("2. Genereer finale ronde")
-		fmt.Println("3. Verwerk scores van huidige ronde")
-        fmt.Println("4. Genereer HTML")        
-        fmt.Println("5. Verwerk nieuwe rating alle spelers")
+        fmt.Println("3. Verwerk scores van huidige ronde")
+        fmt.Println("4. Genereer HTML")
+        fmt.Println("5. Genereer overview + new_ratings")
         fmt.Println("6. Exit")
         fmt.Print("Kies een optie: ")
 
@@ -734,58 +809,58 @@ func main() {
         fmt.Scanln(&choice)
 
         switch choice {
-		case "0":
-			fmt.Print("Voer nieuwe rondenr in: ")
-			var newRound string
-			fmt.Scanln(&newRound)
-			if roundNum, err := strconv.Atoi(newRound); err == nil {
-				currentRound = roundNum
-				fmt.Println("Huidige rondenr is nu:", currentRound)
+        case "0":
+            fmt.Print("Voer nieuwe rondenr in: ")
+            var newRound string
+            fmt.Scanln(&newRound)
+            if roundNum, err := strconv.Atoi(newRound); err == nil {
+                currentRound = roundNum
+                fmt.Println("Huidige rondenr is nu:", currentRound)
 
-				// Probeer spelerstatus van de huidige ronde te laden
-				statusFile := fmt.Sprintf("ronde%d_status.txt", currentRound)
-				if _, err := os.Stat(statusFile); err == nil {
-					if err := loadPlayerStatus(statusFile, players); err != nil {
-						fmt.Println("Fout bij laden spelerstatus:", err)
-					} else {
-						fmt.Println("Spelerstatus geladen voor ronde", currentRound)
-					}
-				} else {
-					// Zoek naar de meest recente eerdere status
-					loaded := false
-					for r := currentRound - 1; r >= 0; r-- {
-						prevStatusFile := fmt.Sprintf("ronde%d_status.txt", r)
-						if _, err := os.Stat(prevStatusFile); err == nil {
-							if err := loadPlayerStatus(prevStatusFile, players); err != nil {
-								fmt.Println("Fout bij laden spelerstatus van ronde", r, ":", err)
-							} else {
-								fmt.Println("Spelerstatus geladen van ronde", r)
-								loaded = true
-								break
-							}
-						}
-					}
-					if !loaded {
-						fmt.Println("Geen eerdere spelerstatus gevonden - start met schone lei")
-					}
-				}
+                // Probeer spelerstatus van de huidige ronde te laden
+                statusFile := fmt.Sprintf("ronde%d_status.txt", currentRound)
+                if _, err := os.Stat(statusFile); err == nil {
+                    if err := loadPlayerStatus(statusFile, players); err != nil {
+                        fmt.Println("Fout bij laden spelerstatus:", err)
+                    } else {
+                        fmt.Println("Spelerstatus geladen voor ronde", currentRound)
+                    }
+                } else {
+                    // Zoek naar de meest recente eerdere status
+                    loaded := false
+                    for r := currentRound - 1; r >= 0; r-- {
+                        prevStatusFile := fmt.Sprintf("ronde%d_status.txt", r)
+                        if _, err := os.Stat(prevStatusFile); err == nil {
+                            if err := loadPlayerStatus(prevStatusFile, players); err != nil {
+                                fmt.Println("Fout bij laden spelerstatus van ronde", r, ":", err)
+                            } else {
+                                fmt.Println("Spelerstatus geladen van ronde", r)
+                                loaded = true
+                                break
+                            }
+                        }
+                    }
+                    if !loaded {
+                        fmt.Println("Geen eerdere spelerstatus gevonden - start met schone lei")
+                    }
+                }
 
-				// Laad matches van de huidige ronde
-				filename := fmt.Sprintf("ronde%d.txt", currentRound)
-				if _, err := os.Stat(filename); err == nil {
-					lastMatches, err = loadMatches(filename, players)
-					if err != nil {
-						fmt.Println("Fout bij laden matches:", err)
-					} else {
-						fmt.Println("Matches geladen voor ronde", currentRound)
-					}
-				} else {
-					fmt.Println("Geen matches gevonden voor ronde", currentRound)
-					lastMatches = nil // Reset matches als er geen bestand is
-				}
-			} else {
-				fmt.Println("Ongeldig rondenr")
-			}
+                // Laad matches van de huidige ronde
+                filename := fmt.Sprintf("ronde%d.txt", currentRound)
+                if _, err := os.Stat(filename); err == nil {
+                    lastMatches, err = loadMatches(filename, players)
+                    if err != nil {
+                        fmt.Println("Fout bij laden matches:", err)
+                    } else {
+                        fmt.Println("Matches geladen voor ronde", currentRound)
+                    }
+                } else {
+                    fmt.Println("Geen matches gevonden voor ronde", currentRound)
+                    lastMatches = nil // Reset matches als er geen bestand is
+                }
+            } else {
+                fmt.Println("Ongeldig rondenr")
+            }
 
         case "1":
             currentRound++
@@ -810,7 +885,7 @@ func main() {
             } else {
                 fmt.Println("Finale ronde gegenereerd.")
             }
-			
+
         case "3":
             filename := fmt.Sprintf("ronde%d.txt", currentRound)
             results, err := readRoundResults(filename)
@@ -857,7 +932,7 @@ func main() {
             if err := generateRatingHTML(players, allResults, initialRatings); err != nil {
                 fmt.Println("Fout bij genereren rating HTML:", err)
             } else {
-                fmt.Println("Rating update HTML gegenereerd in 'rating_update.html'")
+                fmt.Println("Rating update HTML gegenereerd in 'overview.html'")
             }
 
         case "6":
