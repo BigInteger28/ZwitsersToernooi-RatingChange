@@ -224,7 +224,7 @@ func pairPlayers(players []Player) []Match {
             for j := i + 1; j < len(group); j++ {
                 p2 := group[j]
                 if !used[p2.Name] && !hasPlayed(p1, p2) {
-                    matches = append(matches, Match{Player1: p1, Player2: p2, Result: "0-0"})
+                    matches = append(matches, Match{Player1: p1, Player2: p2, Result: "-"})
                     used[p1.Name] = true
                     used[p2.Name] = true
                     paired = true
